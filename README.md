@@ -3,6 +3,10 @@
 一个手写的 **VST3 / Standalone** 数字劣化插件：它不跑真正的编解码器，而是用极少的 DSP 手段，
 把「低码率压缩、时钟抖动、网络丢包」这些有损音频的听感特征做出来，并配一套 640×640 的纯像素界面。
 
+## Live demo
+
+![BADHERTS Losser999 频谱动画](docs/demo.gif)
+
 ![BADHERTS Losser999](docs/promo.png)
 
 - **免费、开源**（MIT）
