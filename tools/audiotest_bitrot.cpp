@@ -22,6 +22,8 @@ struct Settings
     int lmode = 0;
     float amount = 0.0f, speed = 40.0f, texture = 30.0f, pmix = 60.0f;
     float preLow = 20.0f, preHigh = 20000.0f;
+    int ftype = 0;      // 0 off, 1 lp12, 2 lp24, ...
+    float cutoff = 20000.0f, fres = 0.0f;
     float weird = 0.0f;
     bool fold = false, cheb = false, comb = false, smear = false;
     bool whisper = false, freeze = false, mirror = false, blurt = false;
@@ -43,6 +45,9 @@ void apply (BitrotProcessor& p, const Settings& s)
     set (p, "pmix", s.pmix * 0.01f);
     set (p, "preLow", (float) p.apvts.getParameter ("preLow")->convertTo0to1 (s.preLow));
     set (p, "preHigh", (float) p.apvts.getParameter ("preHigh")->convertTo0to1 (s.preHigh));
+    set (p, "ftype", (float) s.ftype / 6.0f);
+    set (p, "cutoff", (float) p.apvts.getParameter ("cutoff")->convertTo0to1 (s.cutoff));
+    set (p, "fres", s.fres * 0.01f);
     set (p, "weird", s.weird * 0.01f);
     set (p, "fx_fold", s.fold ? 1.0f : 0.0f);
     set (p, "fx_cheb", s.cheb ? 1.0f : 0.0f);
@@ -231,6 +236,26 @@ int main()
                 std::printf ("FAIL: fx %s\n", names[i]);
                 ++failures;
             }
+        }
+    }
+
+    // post filter actually cuts
+    {
+        Settings s;
+        s.amount = 0.0f;
+        const auto open = run (s);
+
+        s.ftype = 2;      // LP24
+        s.cutoff = 500.0f;
+        const auto lp = run (s);
+
+        const double drop = db (lp.rmsOut / open.rmsOut);
+        std::printf ("lp24 500hz  %+6.2f dB vs open\n", drop);
+
+        if (drop > -6.0)
+        {
+            std::printf ("FAIL: LP24 barely attenuates\n");
+            ++failures;
         }
     }
 

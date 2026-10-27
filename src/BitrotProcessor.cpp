@@ -50,7 +50,12 @@ juce::AudioProcessorValueTreeState::ParameterLayout BitrotProcessor::createLayou
     addFloat ("amount", "Amount", juce::NormalisableRange<float> (0.0f, 100.0f), 45.0f);
     addFloat ("speed", "Speed", juce::NormalisableRange<float> (0.0f, 100.0f), 40.0f);
     addFloat ("texture", "Texture", juce::NormalisableRange<float> (0.0f, 100.0f), 30.0f);
-    addFloat ("pmix", "Packet Mix", juce::NormalisableRange<float> (0.0f, 100.0f), 60.0f);
+    params.push_back (std::make_unique<juce::AudioParameterChoice> (
+        juce::ParameterID { "ftype", 1 }, "Filter",
+        juce::StringArray { "OFF", "LP12", "LP24", "HP12", "HP24", "BP", "NOTCH" }, 0));
+
+    addFloat ("cutoff", "Cutoff", logRange (20.0f, 20000.0f, 1000.0f), 20000.0f);
+    addFloat ("fres", "Resonance", juce::NormalisableRange<float> (0.0f, 100.0f), 0.0f);
 
     addFloat ("preLow", "Pre Low", logRange (20.0f, 20000.0f, 400.0f), 60.0f);
     addFloat ("preHigh", "Pre High", logRange (20.0f, 20000.0f, 4000.0f), 16000.0f);
@@ -70,8 +75,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout BitrotProcessor::createLayou
 
     params.push_back (std::make_unique<juce::AudioParameterChoice> (
         juce::ParameterID { "lfoTarget", 1 }, "LFO Target",
-        juce::StringArray { "NONE", "AMOUNT", "SPEED", "TEXTURE", "P-MIX", "PRE-LO", "PRE-HI",
-                            "WEIRD", "GATE", "MIX", "OUT", "FIELD" }, 1));
+        juce::StringArray { "NONE", "AMOUNT", "SPEED", "TEXTURE", "CUTOFF", "PRE-LO", "PRE-HI",
+                            "WEIRD", "GATE", "MIX", "OUT", "FIELD", "RES" }, 1));
 
     addFloat ("lfoRate", "LFO Rate", logRange (0.05f, 20.0f, 2.0f), 1.5f);
     addFloat ("lfoDepth", "LFO Depth", juce::NormalisableRange<float> (0.0f, 100.0f), 0.0f);
@@ -98,7 +103,9 @@ void BitrotProcessor::cacheParameters()
     p.amount = get ("amount");
     p.speed = get ("speed");
     p.texture = get ("texture");
-    p.pmix = get ("pmix");
+    p.ftype = get ("ftype");
+    p.cutoff = get ("cutoff");
+    p.fres = get ("fres");
     p.preLow = get ("preLow");
     p.preHigh = get ("preHigh");
     p.field = get ("field");
@@ -135,7 +142,7 @@ BitrotProcessor::EngineSettings BitrotProcessor::mapParameters (int mode, float 
     const float a = juce::jlimit (0.0f, 1.0f, amount);
     const float sp = juce::jlimit (0.0f, 1.0f, speed);
     const float tx = juce::jlimit (0.0f, 1.0f, texture);
-    const float pm = juce::jlimit (0.0f, 1.0f, pmix);
+    juce::ignoreUnused (pmix);
 
     switch (mode)
     {
@@ -166,7 +173,7 @@ BitrotProcessor::EngineSettings BitrotProcessor::mapParameters (int mode, float 
             e.texture = tx * a;
             e.packetAmount = 0.1f + a * 0.7f;
             e.packetLen = 0.01f + sp * 0.18f;
-            e.packetMix = pm;
+            e.packetMix = 0.5f;   // even split between gaps and repeats
             break;
 
         case modeStandard:
@@ -239,6 +246,7 @@ void BitrotProcessor::resetState()
         combDelay[ch].reset();
         dc[ch].reset();
         fieldHigh.reset();
+        filter[ch].reset();
 
         envelope[ch] = 0.0f;
         held[ch] = 0.0f;
@@ -345,18 +353,22 @@ void BitrotProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
 
     updatePreFilter();
 
+    const int filterType = (int) p.ftype->load();
+
     // ---- parameter mapping layer -----------------------------------------
     const int lossMode = (int) p.lmode->load();
 
     float amount = p.amount->load() * 0.01f;
     float speed = p.speed->load() * 0.01f;
     float texture = p.texture->load() * 0.01f;
-    float pmix = p.pmix->load() * 0.01f;
+
     float weirdAmount = p.weird->load() * 0.01f;
     float gateAmount = p.gate->load() * 0.01f;
     float mixValue = p.mix->load() * 0.01f;
     float outDb = p.out->load();
     float fieldValue = p.field->load();
+    float cutoffValue = p.cutoff->load();
+    float resValue = p.fres->load();
 
     // ---- lfo --------------------------------------------------------------
     const float lfoRateHz = p.lfoRate->load();
@@ -371,7 +383,7 @@ void BitrotProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
         case 1:  amount = juce::jlimit (0.0f, 1.0f, amount + lfoBlock); break;
         case 2:  speed = juce::jlimit (0.0f, 1.0f, speed + lfoBlock); break;
         case 3:  texture = juce::jlimit (0.0f, 1.0f, texture + lfoBlock); break;
-        case 4:  pmix = juce::jlimit (0.0f, 1.0f, pmix + lfoBlock); break;
+        case 4:  cutoffValue = juce::jlimit (20.0f, 20000.0f, cutoffValue * std::pow (2.0f, lfoBlock * 4.0f)); break;
         case 5:  updatePreFilter(); break;
         case 6:  updatePreFilter(); break;
         case 7:  weirdAmount = juce::jlimit (0.0f, 1.0f, weirdAmount + lfoBlock); break;
@@ -379,13 +391,14 @@ void BitrotProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
         case 9:  mixValue = juce::jlimit (0.0f, 1.0f, mixValue + lfoBlock); break;
         case 10: outDb = juce::jlimit (-24.0f, 12.0f, outDb + lfoBlock * 12.0f); break;
         case 11: fieldValue = juce::jlimit (0.0f, 200.0f, fieldValue + lfoBlock * 100.0f); break;
+        case 12: resValue = juce::jlimit (0.0f, 100.0f, resValue + lfoBlock * 100.0f); break;
         default: break;
     }
 
     sMix.setTargetValue (mixValue);
     sOut.setTargetValue (tag::dbToGain (outDb));
 
-    const EngineSettings eng = mapParameters (lossMode, amount, speed, texture, pmix);
+    const EngineSettings eng = mapParameters (lossMode, amount, speed, texture, 0.5f);
 
     // ---- cached engine constants (no trig inside the sample loop) ---------
     const float sr = (float) currentSampleRate;
@@ -399,6 +412,15 @@ void BitrotProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
 
     const bool packetOn = eng.packetAmount > 0.01f;
     const int packetMaxLen = juce::jmax (16, (int) (sr * 0.4f));
+
+    if (filterType != tag::Filter::off)
+    {
+        const float fc = juce::jlimit (20.0f, 20000.0f, cutoffValue);
+        const float q = 0.5f + (juce::jlimit (0.0f, 100.0f, resValue) * 0.01f) * 7.5f;
+
+        for (int ch = 0; ch < 2; ++ch)
+            filter[ch].set (fc, q, currentSampleRate);
+    }
 
     const float widthGain = juce::jlimit (0.0f, 2.0f, fieldValue * 0.01f);
     const float fieldCollapse = juce::jlimit (0.0f, 1.0f, 1.0f - juce::jmin (1.0f, widthGain));
@@ -543,6 +565,10 @@ void BitrotProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
             // ---- 5. inverse --------------------------------------------------
             if (eng.inverse)
                 x = juce::jlimit (-2.0f, 2.0f, preFiltered - x);
+
+            // ---- 6. post filter ------------------------------------------------
+            if (filterType != tag::Filter::off)
+                x = filter[ch].process (filterType, x);
 
             // ---- shared weird effects ----------------------------------------
             if (fxFoldOn)

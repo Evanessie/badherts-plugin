@@ -28,7 +28,7 @@ private:
 
     BitrotProcessor& processor;
 
-    std::unique_ptr<tag::pixel::PixelSlider> amountSlider, speedSlider, textureSlider, pmixSlider,
+    std::unique_ptr<tag::pixel::PixelSlider> amountSlider, speedSlider, textureSlider, cutoffSlider, resSlider,
         preLowSlider, preHighSlider, weirdSlider, mixSlider, outSlider;
     std::unique_ptr<tag::pixel::PixelSpectrum> spectrum;
     std::unique_ptr<tag::pixel::PixelMatrix> matrix;
@@ -36,7 +36,7 @@ private:
     std::unique_ptr<tag::pixel::PixelTabs> tabs, fftTabs;
     std::unique_ptr<tag::pixel::PixelButton> noiseButton, randomButton, foldButton, chebButton, combButton, smearButton,
         whisperButton, freezeButton, mirrorButton, blurButton;
-    std::unique_ptr<tag::pixel::PixelStepper> filterStepper, lfoTargetStepper;
+    std::unique_ptr<tag::pixel::PixelStepper> filterStepper, typeStepper, lfoTargetStepper;
     std::unique_ptr<tag::pixel::PixelSlider> lfoRateSlider, lfoDepthSlider;
     std::unique_ptr<tag::pixel::PixelLfo> lfoScope;
     std::unique_ptr<tag::pixel::PixelField> fieldControl;

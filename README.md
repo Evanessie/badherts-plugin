@@ -30,7 +30,7 @@
 | **P.LOSS** | 随机门控，空隙内静音 | AMOUNT=丢包频率，SPEED=空隙长度 |
 | **P.REPEAT** | 同样的门控，但空隙内循环上一段 | 同上 |
 | **INVERSE** | 输出 `preFiltered − 标准劣化`，即被丢弃的残差 | AMOUNT=残差比例 |
-| **STD+P** | 标准劣化 + 丢包同时工作 | P-MIX 控制丢包/重复比例 |
+| **STD+P** | 标准劣化 + 丢包同时工作 | 丢包与重复各占一半 |
 
 `PRE-LO` / `PRE-HI` 是前置带通，先把输入限带再劣化 —— 这是让声音"像电话 / 像烂 MP3"最有效的一步。
 两端可以自由拖动，但永远不会交叉（至少差 1.2 倍）。
@@ -46,8 +46,9 @@
 
 | 控件 | 说明 |
 |---|---|
-| **LFO** | 可指向任意参数（AMOUNT/SPEED/TEXTURE/P-MIX/PRE-LO/PRE-HI/WEIRD/GATE/MIX/OUT/FIELD） |
+| **LFO** | 可指向任意参数（AMOUNT/SPEED/TEXTURE/CUTOFF/PRE-LO/PRE-HI/WEIRD/GATE/MIX/OUT/FIELD/RES） |
 | **H₂** | 声场控制：0% 单声道 → 100% 原样 → 200% 超宽，并带高频联合立体声塌陷 |
+| **FILTER** | 后置滤波器：OFF / LP12 / LP24 / HP12 / HP24 / BP / NOTCH，配 CUTOFF 与 RES 两个旋钮 |
 | **GATE** | 频谱门限，画在那条可拖动的横线上，支持反向 |
 | **NO DOTS** | 一键关掉界面里所有噪点 |
 | **RANDOM** | 随机化除 MIX / OUT 外的所有参数；每个旋钮右上角的锁点可以锁定它 |
@@ -56,7 +57,7 @@
 ## 信号链
 
 ```
-in → 前置带通 → 参数映射层 → 劣化引擎 → 效果总线 → 干湿混合 → 声场 → 安全限幅 → out
+in → 前置带通 → 参数映射层 → 劣化引擎 → 后置滤波 → 效果总线 → 干湿混合 → 声场 → 安全限幅 → out
      HP/LP        lmode 决定      六种模式共享      8 个开关     MIX       H₂      软膝
 ```
 

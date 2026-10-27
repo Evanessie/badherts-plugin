@@ -82,7 +82,9 @@ private:
         std::atomic<float>* amount = nullptr;
         std::atomic<float>* speed = nullptr;
         std::atomic<float>* texture = nullptr;
-        std::atomic<float>* pmix = nullptr;
+        std::atomic<float>* ftype = nullptr;
+        std::atomic<float>* cutoff = nullptr;
+        std::atomic<float>* fres = nullptr;
         std::atomic<float>* preLow = nullptr;
         std::atomic<float>* preHigh = nullptr;
         std::atomic<float>* field = nullptr;

@@ -129,7 +129,8 @@ BitrotEditor::BitrotEditor (BitrotProcessor& p)
     amountSlider  = std::make_unique<PixelSlider> (state, "amount", "AMOUNT", pink, pct, true, "heart");
     speedSlider   = std::make_unique<PixelSlider> (state, "speed", "SPEED", blue, pct, true, "sparkle");
     textureSlider = std::make_unique<PixelSlider> (state, "texture", "TEXTURE", blue, pct, true, "star");
-    pmixSlider    = std::make_unique<PixelSlider> (state, "pmix", "P-MIX", green, pct, true, "skull");
+    cutoffSlider  = std::make_unique<PixelSlider> (state, "cutoff", "CUTOFF", green, hzText, true, "disc");
+    resSlider     = std::make_unique<PixelSlider> (state, "fres", "RES", green, pct, true, "star");
     preLowSlider  = std::make_unique<PixelSlider> (state, "preLow", "PRE-LO", green, hzText, true, "eye");
     preHighSlider = std::make_unique<PixelSlider> (state, "preHigh", "PRE-HI", pink, hzText, true, "heartOut");
     weirdSlider = std::make_unique<PixelSlider> (state, "weird", "WEIRD", pink, pct, true, "bolt");
@@ -146,6 +147,7 @@ BitrotEditor::BitrotEditor (BitrotProcessor& p)
     tabs->setIcons ({ "check", "disc", "bolt", "skull" });
 
     filterStepper = std::make_unique<PixelStepper> (state, "lmode", text, "->");
+    typeStepper   = std::make_unique<PixelStepper> (state, "ftype", text, "->");
     filterStepper->setIcons ({ "disc", "bolt", "ghost", "arrow", "heartOut", "sparkle" });
     foldButton  = std::make_unique<PixelButton> ("FOLD", pink);
     chebButton  = std::make_unique<PixelButton> ("CHEB", pink);
@@ -203,7 +205,8 @@ BitrotEditor::BitrotEditor (BitrotProcessor& p)
                      static_cast<juce::Component*> (amountSlider.get()),
                      static_cast<juce::Component*> (speedSlider.get()),
                      static_cast<juce::Component*> (textureSlider.get()),
-                     static_cast<juce::Component*> (pmixSlider.get()),
+                     static_cast<juce::Component*> (cutoffSlider.get()),
+                     static_cast<juce::Component*> (resSlider.get()),
                      static_cast<juce::Component*> (preLowSlider.get()),
                      static_cast<juce::Component*> (preHighSlider.get()),
                      static_cast<juce::Component*> (weirdSlider.get()),
@@ -214,6 +217,7 @@ BitrotEditor::BitrotEditor (BitrotProcessor& p)
                      static_cast<juce::Component*> (fieldControl.get()),
                      static_cast<juce::Component*> (tabs.get()),
                      static_cast<juce::Component*> (filterStepper.get()),
+                     static_cast<juce::Component*> (typeStepper.get()),
                      static_cast<juce::Component*> (fftTabs.get()),
                      static_cast<juce::Component*> (foldButton.get()),
                      static_cast<juce::Component*> (chebButton.get()),
@@ -314,10 +318,10 @@ void BitrotEditor::paint (juce::Graphics& g)
     drawHairline (g, 12, getWidth() - 12, 384, hair, 0x22b1u);
     drawHairline (g, 12, getWidth() - 12, 586, hair, 0x22b2u);
 
-    for (int boundary : { 4, 6 })
+    for (int boundary : { 3, 5, 7, 8 })
     {
         g.setColour (hair);
-        g.fillRect (10 + 69 * boundary, 394, 1, 186);
+        g.fillRect (10 + 62 * boundary, 394, 1, 186);
     }
 
     // ---- mode frame: each character gets its own outline -------------------
@@ -365,30 +369,31 @@ void BitrotEditor::resized()
     lfoDepthSlider->setBounds (304, 330, 206, 24);
     lfoTargetStepper->setBounds (getWidth() - 10 - 112, 330, 112, 24);
 
-    filterStepper->setBounds (10, 356, 112, 20);
+    filterStepper->setBounds (10, 356, 92, 20);
+    typeStepper->setBounds (108, 356, 80, 20);
 
     PixelButton* fx[] = { foldButton.get(), chebButton.get(), combButton.get(), smearButton.get(),
                           whisperButton.get(), freezeButton.get(), mirrorButton.get(),
                           blurButton.get() };
 
     for (int i = 0; i < 8; ++i)
-        fx[i]->setBounds (130 + i * 47, 356, 47, 20);
+        fx[i]->setBounds (194 + i * 42, 356, 42, 20);
 
-    fftTabs->setBounds (getWidth() - 10 - 112, 356, 112, 20);
+    fftTabs->setBounds (getWidth() - 10 - 92, 356, 92, 20);
 
     randomButton->setBounds (528, 42, 104, 20);
     noiseButton->setBounds (416, 42, 104, 20);
 
-    PixelSlider* faders[] = { amountSlider.get(), speedSlider.get(), textureSlider.get(), pmixSlider.get(),
-                              preLowSlider.get(), preHighSlider.get(), weirdSlider.get(),
+    PixelSlider* faders[] = { amountSlider.get(), speedSlider.get(), textureSlider.get(), cutoffSlider.get(),
+                              resSlider.get(), preLowSlider.get(), preHighSlider.get(), weirdSlider.get(),
                               mixSlider.get(), outSlider.get() };
 
-    const int count = 9;
+    const int count = 10;
     const int top = 390;
     const int height = 190;
 
     for (int i = 0; i < count; ++i)
-        faders[i]->setBounds (10 + i * 69 + 4, top, 61, height);
+        faders[i]->setBounds (10 + i * 62 + 3, top, 56, height);
 
     tabs->setBounds (416, 6, 212, 32);
 }
@@ -398,8 +403,8 @@ void BitrotEditor::randomiseAll()
 {
     juce::StringArray locked;
 
-    for (auto* fader : { amountSlider.get(), speedSlider.get(), textureSlider.get(), pmixSlider.get(),
-                         preLowSlider.get(), preHighSlider.get(), weirdSlider.get(),
+    for (auto* fader : { amountSlider.get(), speedSlider.get(), textureSlider.get(), cutoffSlider.get(),
+                         resSlider.get(), preLowSlider.get(), preHighSlider.get(), weirdSlider.get(),
                          mixSlider.get(), outSlider.get() })
         if (fader != nullptr && fader->isLocked())
             locked.add (fader->getParamID());
@@ -434,8 +439,8 @@ void BitrotEditor::timerCallback()
         lastHideDots = hideDots;
         matrix->setVisible (! hideDots);
 
-        for (auto* fader : { amountSlider.get(), speedSlider.get(), textureSlider.get(), pmixSlider.get(),
-                             preLowSlider.get(), preHighSlider.get(), weirdSlider.get(),
+        for (auto* fader : { amountSlider.get(), speedSlider.get(), textureSlider.get(), cutoffSlider.get(),
+                             resSlider.get(), preLowSlider.get(), preHighSlider.get(), weirdSlider.get(),
                              mixSlider.get(), outSlider.get() })
             fader->setQuiet (hideDots);
 

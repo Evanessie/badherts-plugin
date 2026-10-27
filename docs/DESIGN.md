@@ -55,7 +55,7 @@ recombined without a phase offset.
 | **Amount** | band-wobble depth | jitter depth (0–2.5 samples) | how often packets drop | how often packets drop | residual mix | both at 0.8× |
 | **Speed** | wobble rate 0.2–7 Hz | jitter LFO 2–62 Hz | gap + burst length 15–295 ms | same | 0.2–7 Hz | 10–190 ms |
 | **Texture** | extra high-band grit | unused | 0.3× grit | 0.3× grit | high-band grit | high-band grit |
-| **P. Mix** | – | – | forced 0 (silence) | forced 1 (repeat) | – | loss ↔ repeat blend |
+| **Filter type** | always: post filter on the wet path (OFF / LP / HP / BP / NOTCH, 12 or 24 dB) | same | same | same | same | same |
 | **Pre Low / High** | always: input band-limit before degradation | same | same | same | same | same |
 
 Smoothing: every user gain goes through `SmoothedValue` at 20 ms; band gains
