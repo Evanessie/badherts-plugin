@@ -1,0 +1,55 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Fetch JUCE 7.0.12
+        uses: actions/checkout@v4
+        with:
+          repository: juce-framework/JUCE
+          ref: 7.0.12
+          path: third_party/JUCE
+
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release --parallel 4
+
+      - name: Package
+        shell: pwsh
+        run: |
+          $rel = "build/BadHertsLooser999_artefacts/Release"
+          Compress-Archive -Path "$rel/VST3/*" -DestinationPath "BADHERTS-Losser999-vst3-win64.zip" -Force
+          Copy-Item "$rel/Standalone/*.exe" "BADHERTS-Losser999-standalone-win64.exe" -Force
+          Get-ChildItem *.zip, *.exe | Select-Object Name, Length
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: BADHERTS-Losser999-windows
+          path: |
+            BADHERTS-Losser999-vst3-win64.zip
+            BADHERTS-Losser999-standalone-win64.exe
+
+      - name: Attach to release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            BADHERTS-Losser999-vst3-win64.zip
+            BADHERTS-Losser999-standalone-win64.exe
