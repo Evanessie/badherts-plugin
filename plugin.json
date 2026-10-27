@@ -1,0 +1,43 @@
+{
+  "name": "BADHERTS Losser999",
+  "version": "1.0.0",
+  "vendor": "Evanessie999 and 最爱999的大肥鱼",
+  "type": "VST3",
+  "bundle": "BADHERTS Losser999.vst3",
+  "formats": ["VST3", "Standalone"],
+  "hosts": ["Ableton Live", "FL Studio", "Bitwig"],
+  "platforms": ["Windows x64", "macOS (Intel/ARM, needs rebuild)"],
+  "dsp": {
+    "stages": ["pre_filter", "parameter_mapping", "lossy_engine", "dry_wet", "safety"],
+    "realtime_safe": true,
+    "allocates_in_process_block": false,
+    "uses_system_rand": false,
+    "implements_real_codec": false,
+    "reported_latency_samples": 1023
+  },
+  "parameters": [
+    { "id": "lmode",    "name": "Loss Mode",   "type": "choice", "choices": ["STANDARD","JITTER","P.LOSS","P.REPEAT","INVERSE","STD+P"] },
+    { "id": "amount",   "name": "Amount",      "type": "float",  "range": [0, 100], "default": 45 },
+    { "id": "speed",    "name": "Speed",       "type": "float",  "range": [0, 100], "default": 40 },
+    { "id": "texture",  "name": "Texture",     "type": "float",  "range": [0, 100], "default": 30 },
+    { "id": "pmix",     "name": "Packet Mix",  "type": "float",  "range": [0, 100], "default": 60 },
+    { "id": "preLow",   "name": "Pre Low",     "type": "float",  "range": [20, 2000],   "default": 60 },
+    { "id": "preHigh",  "name": "Pre High",    "type": "float",  "range": [2000, 20000], "default": 16000 },
+    { "id": "weird",    "name": "Weird",       "type": "float",  "range": [0, 100], "default": 0 },
+    { "id": "gate",     "name": "Gate",        "type": "float",  "range": [0, 100], "default": 0 },
+    { "id": "mix",      "name": "Mix",         "type": "float",  "range": [0, 100], "default": 100 },
+    { "id": "out",      "name": "Output",      "type": "float",  "range": [-24, 12], "default": 0 }
+  ],
+  "ui": {
+    "size": [640, 640],
+    "palette": ["#f7f8f4", "#16a34a", "#3aa8dd", "#f48fb1"],
+    "fonts": { "pixel": "5x7 bitmap (embedded)", "credit": "Microsoft YaHei 12px" }
+  },
+  "structure": {
+    "src": "DSP + processor + editor",
+    "src/pixel": "UI toolkit (font, icons, widgets, spectrum)",
+    "tools": "offline tests + screenshot harness",
+    "prompts": "CoT template and safety rules",
+    "docs": "design notes and screenshots"
+  }
+}

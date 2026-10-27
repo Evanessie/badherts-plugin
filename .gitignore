@@ -1,0 +1,28 @@
+# build output
+build/
+**/build/
+*.obj
+*.o
+*.exe
+*.vst3
+*.log
+tmp/
+
+# bundled toolchain + deps (see README for how to fetch them)
+tools/w64devkit/
+third_party/JUCE/
+
+# shipped binaries
+dist/*.vst3/
+dist/*.exe
+dist/*.7z
+
+# os junk
+.DS_Store
+Thumbs.db
+
+# sibling project in the same workspace, not part of this repo
+kick/
+
+# archives
+*.zip
