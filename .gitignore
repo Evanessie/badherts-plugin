@@ -26,3 +26,7 @@ kick/
 
 # archives
 *.zip
+
+# local cmake attempts inside the workspace
+.build-win/
+.tmpbuild/
