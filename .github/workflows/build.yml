@@ -50,6 +50,15 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
+          name: "BADHERTS Losser999 ${{ github.ref_name }} (CI build)"
+          body: |
+            Automated Windows build from `${{ github.sha }}`.
+
+            - `BADHERTS-Losser999-vst3-win64.zip` → unzip into `C:\Program Files\Common Files\VST3\`
+            - `BADHERTS-Losser999-standalone-win64.exe` → double click, no DAW needed
+
+            Built with MSVC on GitHub Actions. MIT licensed.
+          fail_on_unmatched_files: true
           files: |
             BADHERTS-Losser999-vst3-win64.zip
             BADHERTS-Losser999-standalone-win64.exe
